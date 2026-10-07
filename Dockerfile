@@ -1,42 +1,33 @@
-# Ultra-fast, lightweight Python 3.12 image
-FROM python:3.12-slim
+ARG REGISTRY=""
+FROM ${REGISTRY}python:3.12-slim
 
-# Set environment variables
+WORKDIR /app
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH="/app:/app/tests" \
     PORT=8000
 
-# Set work directory
-WORKDIR /app
-
-# Install minimal system dependencies
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install python dependencies with high-speed mirror + PyPI fallback
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir \
-    -i https://mirrors.aliyun.com/pypi/simple/ \
-    --trusted-host mirrors.aliyun.com \
-    --extra-index-url https://pypi.org/simple \
-    -r requirements.txt
+# Install requirements with fallback chain (exact pattern from tafakormag)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt || \
+    (echo "Primary PyPI registry failed/unreachable. Trying Tsinghua mirror..." && \
+     pip install --no-cache-dir --default-timeout=1000 -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple/) || \
+    (echo "Tsinghua mirror failed/unreachable. Falling back to devneeds mirror..." && \
+     pip install --no-cache-dir --default-timeout=1000 -r requirements.txt --index-url https://pypi.devneeds.ir/simple/)
 
 # Copy project files
-COPY . /app/
+COPY . .
 
-# Install wagtail-ai in editable mode instantly without re-downloading dependencies
+# Editable install without re-downloading dependencies
 RUN pip install --no-cache-dir --no-deps -e .
 
-# Create directories for static, media, and SQLite DB
+# Create persistent and static directories
 RUN mkdir -p /app/test-static /app/test-media /app/data
 
-# Make entrypoint executable
+# Entrypoint setup
 RUN chmod +x /app/entrypoint.sh
 
-# Expose port
 EXPOSE 8000
 
-# Run entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]
