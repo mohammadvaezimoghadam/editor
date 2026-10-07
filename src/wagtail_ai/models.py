@@ -163,7 +163,55 @@ class AgentSettingsMixin(models.Model):
         default=ContentFeedbackContentType.HTML,
     )
 
+    # AI Provider configuration
+    ai_provider = models.CharField(
+        max_length=50,
+        choices=[
+            ("echo", _("Echo (تستی بدون نیاز به کلید)")),
+            ("openai", "OpenAI (ChatGPT)"),
+            ("anthropic", "Anthropic (Claude)"),
+            ("gemini", "Google Gemini"),
+            ("deepseek", "DeepSeek"),
+            ("openrouter", "OpenRouter"),
+            ("mistral", "Mistral AI"),
+            ("groq", "Groq"),
+            ("ollama", "Ollama (محلی / Local)"),
+            ("custom", _("سایر / OpenAI Compatible")),
+        ],
+        default="echo",
+        verbose_name=_("سرویس‌دهنده هوش مصنوعی (Provider)"),
+        help_text=_("سرویس‌دهنده هوش مصنوعی مورد نظر را انتخاب کنید."),
+    )
+    ai_model = models.CharField(
+        max_length=100,
+        blank=True,
+        default="gpt-4o-mini",
+        verbose_name=_("نام مدل (Model)"),
+        help_text=_("مثال: gpt-4o-mini, claude-3-5-sonnet, deepseek-chat, gemini-3.8-flash, llama3"),
+    )
+    ai_api_key = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("اکسس توکن / کلید API (Access Token)"),
+        help_text=_("اکسس توکن یا کلید اختصاصی شما برای ارتباط با مدل."),
+    )
+    ai_api_base = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("آدرس اندپوینت / Base URL"),
+        help_text=_("در صورت نیاز به آدرس سفارشی (مثلاً http://localhost:11434/v1 یا https://api.avalai.ir/v1 یا OpenRouter)"),
+    )
+
     panels = [
+        MultiFieldPanel(
+            [
+                FieldPanel("ai_provider"),
+                FieldPanel("ai_model"),
+                FieldPanel("ai_api_key"),
+                FieldPanel("ai_api_base"),
+            ],
+            heading=_("تنظیمات سرویس‌دهنده هوش مصنوعی (AI Provider)"),
+        ),
         MultiFieldPanel(
             [
                 FieldPanel(

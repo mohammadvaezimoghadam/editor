@@ -37,7 +37,8 @@ class OpenAIBackendConfig(BaseAIBackendConfig[OpenAIBackendConfigSettingsDict]):
         kwargs.setdefault("timeout_seconds", timeout_seconds)
 
         kwargs.setdefault("openai_api_key", config.get("OPENAI_API_KEY"))
-        kwargs.setdefault("api_base", config.get("API_BASE", DEFAULT_API_BASE))
+        api_base = config.get("API_BASE") or DEFAULT_API_BASE
+        kwargs.setdefault("api_base", api_base.rstrip("/"))
 
         return super().from_settings(config, **kwargs)
 
@@ -114,8 +115,9 @@ class OpenAIBackend(AIBackend[OpenAIBackendConfig]):
             "messages": messages,
             "max_tokens": self.config.token_limit,
         }
+        base_url = self.config.api_base.rstrip("/")
         response = requests.post(
-            f"{self.config.api_base}/chat/completions",
+            f"{base_url}/chat/completions",
             headers=headers,
             json=payload,
             timeout=self.config.timeout_seconds,

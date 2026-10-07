@@ -3,13 +3,10 @@ from typing import NotRequired, Required, TypedDict, cast
 
 from django.forms.utils import flatatt
 from django.template.loader import render_to_string
-from django.urls import include, path, reverse
-from django.utils.html import format_html, json_script
+from django.urls import include, path
 from django.views.i18n import JavaScriptCatalog
 from django_ai_core.contrib.agents import registry
 from wagtail import hooks
-from wagtail.admin.rich_text.editors.draftail.features import ControlFeature
-from wagtail.admin.staticfiles import versioned_static
 from wagtail.contrib.settings.models import register_setting
 
 from wagtail_ai.agents.base import get_agent_settings, get_agent_settings_model
@@ -69,23 +66,7 @@ def register_admin_urls():
     ]
 
 
-@hooks.register("register_rich_text_features")  # type: ignore
-def register_ai_feature(features):
-    feature_name = "ai"
-    features.default_features.append(feature_name)
-
-    features.register_editor_plugin(
-        "draftail",
-        feature_name,
-        ControlFeature(
-            {
-                "type": feature_name,
-            },
-            js=["wagtail_ai/draftail.js"],
-            css={"all": ["wagtail_ai/draftail.css"]},
-        ),
-    )
-
+# Frontend UI hooks (Draftail editor plugin, admin js/css) removed for pure backend mode.
 
 class PromptDict(TypedDict):
     # Fields should match the Prompt type defined in custom.d.ts
@@ -130,35 +111,6 @@ def get_setting_prompts():
     ]
 
 
-@hooks.register("insert_global_admin_css")  # type: ignore
-def ai_admin_css():
-    return format_html(
-        '<link rel="stylesheet" href="{}">', versioned_static("wagtail_ai/main.css")
-    )
-
-
-@hooks.register("insert_global_admin_js")  # type: ignore
-def ai_admin_js():
-    config = {
-        "aiPrompts": get_prompts(),
-        "settingPrompts": get_setting_prompts(),
-        "urls": {
-            "TEXT_COMPLETION": reverse("wagtail_ai:text_completion"),
-            "DESCRIBE_IMAGE": reverse("wagtail_ai:describe_image"),
-            "CONTENT_FEEDBACK": reverse("wagtail_ai:content_feedback"),
-            "BASIC_PROMPT": reverse("wagtail_ai:basic_prompt"),
-            "SUGGESTED_CONTENT": reverse("wagtail_ai:suggested_content"),
-        },
-    }
-
-    return format_html(
-        '{}<script src="{}"></script><script src="{}"></script>',
-        json_script(config, "wagtail-ai-config"),
-        versioned_static("wagtail_ai/main.js"),
-        reverse("wagtail_ai:javascript_catalog"),
-    )
-
-
 @hooks.register("insert_global_admin_js")  # type: ignore
 def ai_editor_js():
     dropdown_attrs = {
@@ -174,14 +126,6 @@ def ai_editor_js():
 def register_viewset():
     return prompt_viewset
 
-
-@hooks.register("register_icons")  # type: ignore
-def register_icons(icons):
-    return [
-        *icons,
-        "wagtail_ai/icons/wand.svg",
-        "wagtail_ai/icons/wand-animated.svg",
-    ]
 
 
 register_setting(get_agent_settings_model(), order=prompt_viewset.menu_order - 1)

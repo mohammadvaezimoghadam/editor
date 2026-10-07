@@ -39,6 +39,27 @@ def get_provider(alias=DEFAULT_PROVIDER_ALIAS) -> dict[str, str]:
     Raises:
         ``ImproperlyConfigured``: If provider not found
     """
+    # Check if user configured provider and access token in AgentSettings (database)
+    try:
+        agent_settings = get_agent_settings()
+        if (
+            alias == DEFAULT_PROVIDER_ALIAS
+            and agent_settings
+            and getattr(agent_settings, "ai_provider", None)
+            and agent_settings.ai_provider != "echo"
+        ):
+            prov_dict = {
+                "provider": agent_settings.ai_provider,
+                "model": agent_settings.ai_model or "gpt-4o-mini",
+            }
+            if agent_settings.ai_api_key:
+                prov_dict["api_key"] = agent_settings.ai_api_key
+            if agent_settings.ai_api_base:
+                prov_dict["api_base"] = agent_settings.ai_api_base
+            return prov_dict
+    except Exception:
+        pass
+
     providers = get_providers()
     provider = providers.get(alias)
 

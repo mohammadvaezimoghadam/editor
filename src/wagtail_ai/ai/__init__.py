@@ -168,6 +168,54 @@ class BackendNotFound(Exception):
 
 
 def get_backend(feature: BackendFeature = BackendFeature.TEXT_COMPLETION) -> AIBackend:
+    # 1. Check if user configured provider and access token in AgentSettings (database)
+    try:
+        from wagtail_ai.agents.base import get_agent_settings
+        from wagtail_ai.ai.openai import OpenAIBackend, OpenAIBackendConfig
+        from wagtail_ai.ai.echo import EchoBackend, EchoBackendConfig
+        from wagtail_ai.text_splitters.langchain import LangchainRecursiveCharacterTextSplitter
+        from wagtail_ai.text_splitters.length import NaiveTextSplitterCalculator
+        import os
+
+        agent_settings = get_agent_settings()
+        if agent_settings and getattr(agent_settings, "ai_provider", None):
+            prov = agent_settings.ai_provider
+            if prov == "echo":
+                return EchoBackend(config=EchoBackendConfig(
+                    model_id="echo",
+                    max_word_sleep_seconds=0,
+                    text_splitter_class=LangchainRecursiveCharacterTextSplitter,
+                    text_splitter_length_calculator_class=NaiveTextSplitterCalculator,
+                ))
+            elif prov in ("openai", "deepseek", "openrouter", "groq", "ollama", "custom", "anthropic", "gemini", "mistral"):
+                default_bases = {
+                    "openai": "https://api.openai.com/v1",
+                    "deepseek": "https://api.deepseek.com/v1",
+                    "openrouter": "https://openrouter.ai/api/v1",
+                    "groq": "https://api.groq.com/openai/v1",
+                    "ollama": "http://localhost:11434/v1",
+                    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai",
+                }
+                api_base = (agent_settings.ai_api_base or default_bases.get(prov, "https://api.openai.com/v1")).rstrip("/")
+                api_key = agent_settings.ai_api_key or os.environ.get("OPENAI_API_KEY")
+                model_id = agent_settings.ai_model or "gpt-4o-mini"
+                token_limit = 800 if prov == "groq" else 4096
+                config = OpenAIBackendConfig.from_settings(
+                    {
+                        "MODEL_ID": model_id,
+                        "OPENAI_API_KEY": api_key,
+                        "API_BASE": api_base,
+                        "TIMEOUT_SECONDS": 120,
+                        "TOKEN_LIMIT": token_limit,
+                    },
+                    text_splitter_class=LangchainRecursiveCharacterTextSplitter,
+                    text_splitter_length_calculator_class=NaiveTextSplitterCalculator,
+                )
+                return OpenAIBackend(config=config)
+    except Exception:
+        pass
+
+    # 2. Fall back to settings.WAGTAIL_AI
     match feature:
         case BackendFeature.TEXT_COMPLETION:
             alias = settings.WAGTAIL_AI.get("TEXT_COMPLETION_BACKEND", "default")

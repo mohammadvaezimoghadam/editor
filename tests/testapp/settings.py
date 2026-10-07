@@ -9,12 +9,15 @@ https://docs.djangoproject.com/en/stable/ref/settings/
 """
 
 import os
-
+import dotenv
 import dj_database_url
 
 # Build paths inside the project like this: os.path.join(PROJECT_DIR, ...)
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.dirname(PROJECT_DIR)
+
+# Load environment variables from .env file
+dotenv.load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
@@ -170,19 +173,29 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "test-media")
 
 WAGTAIL_SITE_NAME = "Wagtail AI test site"
 
-if os.environ.get("WAGTAIL_AI_DEFAULT_BACKEND") == "chatgpt":
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_base = os.environ.get("OPENAI_API_BASE")
+model_id = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+if openai_api_key or os.environ.get("WAGTAIL_AI_DEFAULT_BACKEND") == "chatgpt":
+    backend_config = {
+        "MODEL_ID": model_id,
+    }
+    if openai_api_key:
+        backend_config["OPENAI_API_KEY"] = openai_api_key
+    if api_base:
+        backend_config["API_BASE"] = api_base
+
     WAGTAIL_AI = {
         "BACKENDS": {
             "default": {
-                "CLASS": "wagtail_ai.ai.llm.LLMBackend",
-                "CONFIG": {
-                    "MODEL_ID": "gpt-4.1-mini",
-                },
+                "CLASS": "wagtail_ai.ai.openai.OpenAIBackend",
+                "CONFIG": backend_config,
             },
             "vision": {
                 "CLASS": "wagtail_ai.ai.openai.OpenAIBackend",
                 "CONFIG": {
-                    "MODEL_ID": "gpt-4.1-mini",
+                    **backend_config,
                     "TOKEN_LIMIT": 300,
                 },
             },
@@ -190,12 +203,13 @@ if os.environ.get("WAGTAIL_AI_DEFAULT_BACKEND") == "chatgpt":
         "PROVIDERS": {
             "default": {
                 "provider": "openai",
-                "model": "gpt-4.1-mini",
+                "model": model_id,
+                **({"api_key": openai_api_key} if openai_api_key else {}),
+                **({"api_base": api_base} if api_base else {}),
             },
         },
         "IMAGE_DESCRIPTION_BACKEND": "vision",
     }
-
 else:
     WAGTAIL_AI = {
         "BACKENDS": {

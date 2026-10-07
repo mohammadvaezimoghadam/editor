@@ -22,3 +22,6 @@ devenv.lock
 devenv.nix
 .env
 .DS_Store
+*.db
+*.sqlite3
+data/*.db
