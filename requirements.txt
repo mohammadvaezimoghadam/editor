@@ -7,12 +7,7 @@ python-dotenv>=1.0.0
 
 # AI Services
 django-ai-core
-llm>=0.12
 requests>=2.31.0
 
 # Production Server
 gunicorn>=22.0.0
-flit_core>=3.2
-
-# Testing & Utilities
-beautifulsoup4>=4.11

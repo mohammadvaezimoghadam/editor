@@ -1,4 +1,4 @@
-# Multi-stage / lightweight Python 3.12 image
+# Ultra-fast, lightweight Python 3.12 image
 FROM python:3.12-slim
 
 # Set environment variables
@@ -10,20 +10,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies (curl for healthcheck) with fallback and retries
+# Install minimal system dependencies
 RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
+# Install python dependencies with high-speed mirror + PyPI fallback
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir \
+    -i https://mirrors.aliyun.com/pypi/simple/ \
+    --trusted-host mirrors.aliyun.com \
+    --extra-index-url https://pypi.org/simple \
+    -r requirements.txt
 
 # Copy project files
 COPY . /app/
 
-# Install wagtail-ai in editable mode
-RUN pip install --no-cache-dir -e .
+# Install wagtail-ai in editable mode instantly without re-downloading dependencies
+RUN pip install --no-cache-dir --no-deps -e .
 
 # Create directories for static, media, and SQLite DB
 RUN mkdir -p /app/test-static /app/test-media /app/data
