@@ -5,7 +5,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH="/app:/app/tests" \
+    PYTHONPATH="/app:/app/src:/app/tests" \
     PORT=8000
 
 # Install requirements with fallback chain (exact pattern from tafakormag)
@@ -18,9 +18,6 @@ RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt || \
 
 # Copy project files
 COPY . .
-
-# Editable install without re-downloading dependencies
-RUN pip install --no-cache-dir --no-deps -e .
 
 # Create persistent and static directories
 RUN mkdir -p /app/test-static /app/test-media /app/data
