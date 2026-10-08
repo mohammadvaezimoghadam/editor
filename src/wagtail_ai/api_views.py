@@ -25,14 +25,8 @@ class TextCompletionAPIView(APIView):
     """
     POST /api/v1/ai/text/complete/
     
-    Accepts JSON payload to generate, rewrite, or complete text via AI.
-    
-    Payload example:
-    {
-        "text": "Django is a high-level Python web framework.",
-        "method": "replace",
-        "custom_instruction": "Summarize this into Persian in one sentence."
-    }
+    General flexible endpoint to process, rewrite, or complete text via AI.
+    Accepts prompt UUID or custom instruction.
     """
     permission_classes = [AllowAny]
 
@@ -62,7 +56,7 @@ class TextCompletionAPIView(APIView):
         except Exception as e:
             logger.exception("Unexpected error in TextCompletionAPIView")
             return Response(
-                {"success": False, "error": "Internal AI processing error. Please try again later."},
+                {"success": False, "error": f"Internal AI processing error: {e}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -85,3 +79,155 @@ class PromptListAPIView(ListAPIView):
     permission_classes = [AllowAny]
     queryset = Prompt.objects.all().order_by("id")
     serializer_class = PromptSerializer
+
+
+class ProofreadAPIView(APIView):
+    """
+    POST /api/v1/ai/proofread/
+    
+    Direct endpoint for proofreading & grammar correction.
+    Payload: {"text": "متن مورد نظر"}
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        text = request.data.get("text", "").strip()
+        if not text:
+            return Response(
+                {"success": False, "error": "Field 'text' is required and cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prompt_obj = Prompt.objects.filter(default_prompt_id=1).first()
+        service = TextProcessingService()
+
+        try:
+            result = service.process_text(
+                text=text,
+                method="replace",
+                prompt_obj=prompt_obj,
+            )
+            return Response({
+                "success": True,
+                "result": result.result_text,
+                "action": "proofread",
+                "model": result.model,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RewriteAPIView(APIView):
+    """
+    POST /api/v1/ai/rewrite/
+    
+    Direct endpoint for rewriting and polishing.
+    Payload: {"text": "متن", "tone": "polish" | "formal" | "casual"}
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        text = request.data.get("text", "").strip()
+        tone = request.data.get("tone", "polish").lower()
+        if not text:
+            return Response(
+                {"success": False, "error": "Field 'text' is required and cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Tone mapping to prompt IDs: 3=polish, 4=formal, 5=casual
+        tone_map = {
+            "polish": 3,
+            "formal": 4,
+            "casual": 5,
+        }
+        prompt_id = tone_map.get(tone, 3)
+        prompt_obj = Prompt.objects.filter(default_prompt_id=prompt_id).first()
+        service = TextProcessingService()
+
+        try:
+            result = service.process_text(
+                text=text,
+                method="replace",
+                prompt_obj=prompt_obj,
+            )
+            return Response({
+                "success": True,
+                "result": result.result_text,
+                "tone": tone,
+                "model": result.model,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SummarizeAPIView(APIView):
+    """
+    POST /api/v1/ai/summarize/
+    
+    Direct endpoint for summarization.
+    Payload: {"text": "متن مورد نظر برای خلاصه کردن"}
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        text = request.data.get("text", "").strip()
+        if not text:
+            return Response(
+                {"success": False, "error": "Field 'text' is required and cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prompt_obj = Prompt.objects.filter(default_prompt_id=6).first()
+        service = TextProcessingService()
+
+        try:
+            result = service.process_text(
+                text=text,
+                method="replace",
+                prompt_obj=prompt_obj,
+            )
+            return Response({
+                "success": True,
+                "result": result.result_text,
+                "action": "summarize",
+                "model": result.model,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ContinueWritingAPIView(APIView):
+    """
+    POST /api/v1/ai/continue/
+    
+    Direct endpoint for continuing and completing content.
+    Payload: {"text": "متن اولیه"}
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        text = request.data.get("text", "").strip()
+        if not text:
+            return Response(
+                {"success": False, "error": "Field 'text' is required and cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prompt_obj = Prompt.objects.filter(default_prompt_id=2).first()
+        service = TextProcessingService()
+
+        try:
+            result = service.process_text(
+                text=text,
+                method="append",
+                prompt_obj=prompt_obj,
+            )
+            return Response({
+                "success": True,
+                "result": result.result_text,
+                "action": "continue",
+                "model": result.model,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
