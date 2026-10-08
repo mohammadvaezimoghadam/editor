@@ -14,6 +14,7 @@ services:
       - DATABASE_URL=sqlite:////app/data/wagtail_ai.db
     volumes:
       - ./src:/app/src
+      - ./tests:/app/tests
       - static_volume:/app/test-static
       - media_volume:/app/test-media
       - ./data:/app/data
