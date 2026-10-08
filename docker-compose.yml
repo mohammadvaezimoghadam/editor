@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     container_name: wagtail_ai_web
     restart: unless-stopped
     env_file:
