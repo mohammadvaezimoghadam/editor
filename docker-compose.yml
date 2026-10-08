@@ -12,6 +12,7 @@ services:
       - PYTHONUNBUFFERED=1
       - STATIC_ROOT=/app/test-static
       - DATABASE_URL=sqlite:////app/data/wagtail_ai.db
+      - TOKEN_LIMIT=4096
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests

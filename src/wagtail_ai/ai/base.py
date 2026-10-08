@@ -85,10 +85,8 @@ class BaseAIBackendConfig(ConfigClassProtocol[AIBackendConfigSettings]):
                 ) from e
         try:
             return tokens.get_default_token_limit(model_id=model_id)
-        except tokens.NoTokenLimitFound as e:
-            raise ImproperlyConfigured(
-                f'"TOKEN_LIMIT" is not configured for model "{model_id}".'
-            ) from e
+        except Exception:
+            return 4096
 
 
 AIBackendConfig = TypeVar("AIBackendConfig", bound=BaseAIBackendConfig)

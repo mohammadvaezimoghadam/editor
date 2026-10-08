@@ -180,6 +180,7 @@ model_id = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 if openai_api_key or os.environ.get("WAGTAIL_AI_DEFAULT_BACKEND") == "chatgpt":
     backend_config = {
         "MODEL_ID": model_id,
+        "TOKEN_LIMIT": int(os.environ.get("TOKEN_LIMIT", 4096)),
     }
     if openai_api_key:
         backend_config["OPENAI_API_KEY"] = openai_api_key

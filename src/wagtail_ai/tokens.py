@@ -21,4 +21,4 @@ def get_default_token_limit(model_id: str) -> int:
         case "gpt-4.1-mini":
             return 32768
         case _:
-            raise NoTokenLimitFound(model_id)
+            return 4096
