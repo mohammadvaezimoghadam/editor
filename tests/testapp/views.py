@@ -5,9 +5,12 @@ from django.http import JsonResponse
 from wagtail_ai.ai import get_backend
 from wagtail_ai.models import Prompt, AgentSettings
 
+from django.views.decorators.csrf import csrf_exempt
+
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
 def ai_playground(request):
     try:
         agent_settings = AgentSettings.load()
